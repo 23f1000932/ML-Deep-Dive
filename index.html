@@ -1,1 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ML Deep Dive</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f7f6f2;--bg3:#f0efe9;
+  --text:#1a1a18;--text2:#5f5e5a;--text3:#888780;
+  --border:#e0dfd8;--border2:#cccbc4;
+  --purple:#534AB7;--purple-l:#EEEDFE;--purple-t:#3C3489;
+  --teal:#0F6E56;--teal-l:#E1F5EE;--teal-t:#085041;
+  --amber:#854F0B;--amber-l:#FAEEDA;--amber-t:#633806;
+  --blue:#185FA5;--blue-l:#E6F1FB;--blue-t:#0C447C;
+  --coral:#993C1D;--coral-l:#FAECE7;--coral-t:#4A1B0C;
+  --green:#3B6D11;--green-l:#EAF3DE;--green-t:#27500A;
+  --red:#A32D2D;--red-l:#FCEBEB;--red-t:#501313;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#1c1c1a;--bg2:#242422;--bg3:#2c2c2a;
+    --text:#e8e6de;--text2:#b4b2a9;--text3:#888780;
+    --border:#3a3a38;--border2:#4a4a48;
+    --purple:#AFA9EC;--purple-l:#26215C;--purple-t:#CECBF6;
+    --teal:#5DCAA5;--teal-l:#04342C;--teal-t:#9FE1CB;
+    --amber:#EF9F27;--amber-l:#412402;--amber-t:#FAC775;
+    --blue:#85B7EB;--blue-l:#042C53;--blue-t:#B5D4F4;
+    --coral:#F0997B;--coral-l:#4A1B0C;--coral-t:#F5C4B3;
+    --green:#97C459;--green-l:#173404;--green-t:#C0DD97;
+    --red:#F09595;--red-l:#501313;--red-t:#F7C1C1;
+  }
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.7;display:flex;height:100vh;overflow:hidden}
+/* Sidebar */
+#sidebar{width:230px;min-width:230px;background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:12px 0;display:flex;flex-direction:column}
+.phase-group{margin-bottom:4px}
+.phase-title{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);padding:8px 16px 4px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 16px;cursor:pointer;font-size:13px;color:var(--text2);border-radius:0;transition:background .12s,color .12s;border-left:2.5px solid transparent}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:var(--bg3);color:var(--purple);border-left-color:var(--purple);font-weight:500}
+.nav-dot{width:7px;height:7px;border-radius:50%;background:var(--border2);flex-shrink:0}
+.nav-item.active .nav-dot,.nav-item.done .nav-dot{background:var(--purple)}
+.nav-item.done{color:var(--text3)}
+/* Main */
+#main{flex:1;overflow-y:auto;padding:32px 40px 60px}
+.topic-header{margin-bottom:28px}
+.topic-badge{display:inline-block;font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;margin-bottom:10px}
+h1{font-size:24px;font-weight:500;color:var(--text);margin-bottom:6px}
+.topic-tagline{font-size:14px;color:var(--text2);font-style:italic}
+/* Sections */
+.section{margin-bottom:24px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.section-header{padding:12px 18px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;background:var(--bg2)}
+.section-header:hover{background:var(--bg3)}
+.section-icon{font-size:15px}
+.section-title{font-size:14px;font-weight:500;color:var(--text)}
+.section-body{padding:18px;background:var(--bg);border-top:1px solid var(--border)}
+.section-body.hidden{display:none}
+/* Content elements */
+.def-box{background:var(--purple-l);border-left:3px solid var(--purple);padding:14px 16px;border-radius:0 8px 8px 0;margin-bottom:12px;font-size:14px;color:var(--purple-t);line-height:1.7}
+.highlight{background:var(--amber-l);border-left:3px solid var(--amber);padding:12px 16px;border-radius:0 8px 8px 0;margin:10px 0;font-size:13.5px;color:var(--amber-t)}
+.tip{background:var(--teal-l);border-left:3px solid var(--teal);padding:12px 16px;border-radius:0 8px 8px 0;margin:10px 0;font-size:13.5px;color:var(--teal-t)}
+.warn{background:var(--red-l);border-left:3px solid var(--red);padding:12px 16px;border-radius:0 8px 8px 0;margin:10px 0;font-size:13.5px;color:var(--red-t)}
+p{margin-bottom:10px;font-size:14px;color:var(--text2)}
+strong{color:var(--text);font-weight:500}
+ul,ol{padding-left:20px;margin-bottom:10px}
+li{font-size:14px;color:var(--text2);margin-bottom:4px}
+/* Hyperparameter table */
+.param-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.param-table th{text-align:left;padding:8px 12px;background:var(--bg3);color:var(--text);font-weight:500;border-bottom:1px solid var(--border)}
+.param-table td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--text2)}
+.param-table tr:last-child td{border-bottom:none}
+.param-table td:first-child{font-family:monospace;color:var(--purple);font-size:12px;white-space:nowrap;width:160px}
+.param-table td:nth-child(2){color:var(--amber);width:110px;font-size:12px}
+/* Interview QA */
+.qa-item{margin-bottom:14px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.qa-q{padding:10px 14px;background:var(--bg2);font-size:13.5px;color:var(--text);font-weight:500;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.qa-q:hover{background:var(--bg3)}
+.qa-a{padding:12px 14px;font-size:13.5px;color:var(--text2);line-height:1.7;display:none;border-top:1px solid var(--border)}
+.qa-a.open{display:block}
+.chevron{transition:transform .2s;color:var(--text3);font-size:12px}
+.chevron.open{transform:rotate(180deg)}
+/* Nav buttons */
+.nav-btns{display:flex;gap:10px;margin-top:32px}
+.btn{padding:8px 20px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--bg2);color:var(--text);transition:background .12s}
+.btn:hover{background:var(--bg3)}
+.btn-primary{background:var(--purple-l);border-color:var(--purple);color:var(--purple)}
+.btn-primary:hover{background:var(--purple);color:#fff}
+/* Progress bar */
+#progress-bar{height:3px;background:var(--border);position:relative;margin-bottom:28px;border-radius:2px}
+#progress-fill{height:100%;background:var(--purple);border-radius:2px;transition:width .3s}
+/* Tags */
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:4px;margin:2px;font-weight:500}
+code{font-family:monospace;font-size:12px;background:var(--bg3);padding:1px 5px;border-radius:3px;color:var(--purple)}
+.formula{font-family:monospace;font-size:13px;background:var(--bg3);padding:10px 14px;border-radius:6px;margin:8px 0;color:var(--text);display:block}
+</style>
+</head>
+<body>
 
+<div id="sidebar">
+  <div style="padding:12px 16px 8px;font-size:14px;font-weight:500;color:var(--text)">ML Deep Dive</div>
+  <div id="progress-bar" style="margin:0 16px 12px;"><div id="progress-fill" style="width:0%"></div></div>
+  <div class="phase-group">
+    <div class="phase-title">Phase 2 — ML Fundamentals</div>
+    <div class="nav-item active" data-id="0" onclick="goTo(0)"><div class="nav-dot"></div>ML Types & Taxonomy</div>
+    <div class="nav-item" data-id="1" onclick="goTo(1)"><div class="nav-dot"></div>Bias-Variance Tradeoff</div>
+    <div class="nav-item" data-id="2" onclick="goTo(2)"><div class="nav-dot"></div>Cross-Validation</div>
+    <div class="nav-item" data-id="3" onclick="goTo(3)"><div class="nav-dot"></div>Evaluation Metrics</div>
+    <div class="nav-item" data-id="4" onclick="goTo(4)"><div class="nav-dot"></div>Feature Engineering</div>
+    <div class="nav-item" data-id="5" onclick="goTo(5)"><div class="nav-dot"></div>Class Imbalance</div>
+    <div class="nav-item" data-id="6" onclick="goTo(6)"><div class="nav-dot"></div>Regularization</div>
+  </div>
+  <div class="phase-group">
+    <div class="phase-title">Phase 3 — Algorithms</div>
+    <div class="nav-item" data-id="7" onclick="goTo(7)"><div class="nav-dot"></div>Decision Trees</div>
+    <div class="nav-item" data-id="8" onclick="goTo(8)"><div class="nav-dot"></div>Random Forest</div>
+    <div class="nav-item" data-id="9" onclick="goTo(9)"><div class="nav-dot"></div>Ensemble Methods</div>
+    <div class="nav-item" data-id="10" onclick="goTo(10)"><div class="nav-dot"></div>Linear Regression</div>
+    <div class="nav-item" data-id="11" onclick="goTo(11)"><div class="nav-dot"></div>Logistic Regression</div>
+    <div class="nav-item" data-id="12" onclick="goTo(12)"><div class="nav-dot"></div>XGBoost ⭐</div>
+    <div class="nav-item" data-id="13" onclick="goTo(13)"><div class="nav-dot"></div>LightGBM</div>
+  </div>
+</div>
+
+<div id="main"></div>
+
+<script>
+const topics = [
+// 0 - ML Types
+{
+  badge:"Phase 2 · Fundamentals", badgeColor:"purple",
+  title:"ML Types & Taxonomy",
+  tagline:"The foundation of every ML conversation",
+  sections:[
+    {icon:"📖", title:"Technical Definition", body:`
+      <div class="def-box">Machine Learning is a subset of AI where algorithms learn patterns from data without being explicitly programmed. It is divided into paradigms based on the nature of the training signal.</div>
+      <p><strong>Supervised Learning:</strong> The model is trained on labeled data — each input X has a known output Y. The model learns a mapping f(X) → Y by minimizing a loss function.</p>
+      <p><strong>Unsupervised Learning:</strong> No labels. The model finds hidden structure in unlabeled data — clusters, associations, dimensionality reduction.</p>
+      <p><strong>Semi-supervised Learning:</strong> A small amount of labeled data + large amount of unlabeled data. Common in real-world where labeling is expensive.</p>
+      <p><strong>Reinforcement Learning:</strong> An agent takes actions in an environment to maximize cumulative reward. No dataset — it learns by trial and error.</p>
+      <p><strong>Self-supervised Learning:</strong> Labels are derived from the data itself (e.g., predict the next word in a sentence). Powers modern LLMs.</p>
+    `},
+    {icon:"🧩", title:"Supervised: Classification vs Regression", body:`
+      <p><strong>Classification</strong> — Output is a discrete class label. Binary (spam/not spam) or multiclass (digit 0–9).</p>
+      <p><strong>Regression</strong> — Output is a continuous value. Predict house price, temperature, revenue.</p>
+      <div class="highlight">Interview trick: "Is predicting customer churn classification or regression?" → Classification (binary: churn/no-churn). But predicting the probability of churn uses a regression-like output (sigmoid) inside a classification model.</div>
+    `},
+    {icon:"🗂️", title:"When to Use What", body:`
+      <ul>
+        <li><strong>Supervised</strong> — You have labeled historical data and want predictions. Most business problems: fraud detection, churn, price prediction.</li>
+        <li><strong>Unsupervised</strong> — No labels, exploratory. Customer segmentation, anomaly detection, topic modeling.</li>
+        <li><strong>RL</strong> — Sequential decision-making with delayed rewards. Games, robotics, recommendation systems.</li>
+        <li><strong>Self-supervised</strong> — Massive unlabeled corpora. NLP pre-training (BERT, GPT).</li>
+      </ul>
+      <div class="tip">Your churn project = Supervised Classification. Your cinema forecasting = Supervised Regression (demand = continuous).</div>
+    `},
+    {icon:"❓", title:"Interview Q&A", body:`
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">What is the difference between classification and regression? <span class="chevron">▼</span></div><div class="qa-a">Classification predicts a discrete class label (e.g., churn/no-churn), while regression predicts a continuous numerical value (e.g., revenue). Internally, classifiers often estimate a probability using regression-like mechanisms (sigmoid, softmax), but the final output is discretized at a threshold.</div></div>
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">Can a regression algorithm solve a classification problem? <span class="chevron">▼</span></div><div class="qa-a">Yes. Logistic Regression is technically a regression algorithm that outputs a probability between 0 and 1, then applies a threshold (usually 0.5) to produce a binary class. Similarly, SVR can be adapted. The key is: regression outputs a score, a threshold converts it to a label.</div></div>
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">Why can't we use unsupervised learning for churn prediction? <span class="chevron">▼</span></div><div class="qa-a">Unsupervised methods don't know what "churn" means — they just find clusters. Without labeled examples, the algorithm can't distinguish churners from non-churners. You'd get customer segments, not churn predictions. You need historical labeled data (did this customer churn?) to train a supervised model.</div></div>
+    `}
+  ]
+},
+// 1 - Bias Variance
+{
+  badge:"Phase 2 · Fundamentals", badgeColor:"purple",
+  title:"Bias-Variance Tradeoff",
+  tagline:"The most fundamental concept in all of ML",
+  sections:[
+    {icon:"📖", title:"Technical Definition", body:`
+      <div class="def-box">Bias-Variance Tradeoff describes the tension between two sources of model error. Total Error = Bias² + Variance + Irreducible Noise.</div>
+      <p><strong>Bias</strong> — Error from wrong assumptions in the model. A high-bias model is too simple and misses the true pattern. It underfits the data.</p>
+      <code class="formula">High Bias → Model is consistently wrong (systematic error)</code>
+      <p><strong>Variance</strong> — Error from sensitivity to fluctuations in the training set. A high-variance model memorizes noise and fails on new data. It overfits.</p>
+      <code class="formula">High Variance → Model changes drastically with new training data</code>
+      <p><strong>Irreducible Error</strong> — Noise inherent in the data. No model can eliminate this. It sets the floor on your error.</p>
+    `},
+    {icon:"⚖️", title:"The Tradeoff Explained", body:`
+      <p>Increasing model complexity <strong>decreases bias</strong> (model fits training data better) but <strong>increases variance</strong> (model becomes sensitive to training data).</p>
+      <div class="highlight">
+        <strong>Underfitting (High Bias, Low Variance):</strong> Linear model on non-linear data. Train error high, Test error high, Train ≈ Test.<br><br>
+        <strong>Overfitting (Low Bias, High Variance):</strong> Deep tree with no pruning. Train error low, Test error high, Train << Test.<br><br>
+        <strong>Sweet Spot:</strong> Train error reasonably low. Test error close to Train error.
+      </div>
+      <p><strong>Signs of overfitting in your projects:</strong> If your XGBoost train F1 was 0.97 but test F1 was 0.72 — that's high variance. Fix: more regularization (lambda, alpha), lower depth, add more data.</p>
+    `},
+    {icon:"🔧", title:"How to Fix Each", body:`
+      <p><strong>Fixing High Bias (underfitting):</strong></p>
+      <ul>
+        <li>Use a more complex model (tree, ensemble)</li>
+        <li>Add more features / polynomial features</li>
+        <li>Reduce regularization</li>
+        <li>Train longer (for neural nets)</li>
+      </ul>
+      <p><strong>Fixing High Variance (overfitting):</strong></p>
+      <ul>
+        <li>Get more training data</li>
+        <li>Reduce model complexity (lower depth, fewer features)</li>
+        <li>Add regularization (L1/L2, dropout)</li>
+        <li>Use ensemble methods (bagging reduces variance)</li>
+        <li>Early stopping</li>
+      </ul>
+      <div class="tip">Random Forest reduces variance by averaging many high-variance trees. Boosting reduces bias by sequentially correcting errors.</div>
+    `},
+    {icon:"❓", title:"Interview Q&A", body:`
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">How do you know if your model is overfitting or underfitting? <span class="chevron">▼</span></div><div class="qa-a">Compare training error vs validation error. If training error is low but validation error is high → overfitting (high variance). If both errors are high → underfitting (high bias). If both errors are similar and low → good fit. Learning curves (error vs training size) also reveal this pattern.</div></div>
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">Does adding more data always help? <span class="chevron">▼</span></div><div class="qa-a">More data primarily reduces variance (overfitting), not bias. If your model is underfitting (high bias), adding more data won't help because the model's assumption is fundamentally wrong. To fix bias, you need a more expressive model or better features.</div></div>
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">How does regularization affect bias and variance? <span class="chevron">▼</span></div><div class="qa-a">Regularization increases bias (constrains the model) but decreases variance (prevents overfitting). Too much regularization → high bias (underfitting). The strength (lambda/alpha) is a hyperparameter you tune via cross-validation.</div></div>
+    `}
+  ]
+},
+// 2 - Cross Validation
+{
+  badge:"Phase 2 · Fundamentals", badgeColor:"purple",
+  title:"Cross-Validation",
+  tagline:"How you honestly evaluate a model's performance",
+  sections:[
+    {icon:"📖", title:"Technical Definition", body:`
+      <div class="def-box">Cross-Validation is a model evaluation technique that partitions data into complementary subsets, trains on some and validates on others, repeating multiple times to get a robust performance estimate.</div>
+      <p>Without cross-validation, you risk evaluating on the same data you trained on (data leakage) or having a lucky/unlucky train-test split that doesn't represent reality.</p>
+    `},
+    {icon:"🔁", title:"Types of Cross-Validation", body:`
+      <p><strong>Holdout (simple split):</strong> 80% train / 20% test. Fast but unreliable with small datasets.</p>
+      <p><strong>K-Fold CV:</strong> Split data into K equal folds. Train on K-1 folds, test on the remaining 1. Repeat K times. Average the scores. Typically K=5 or K=10.</p>
+      <code class="formula">Final score = mean(score₁, score₂, ..., scoreₖ)</code>
+      <p><strong>Stratified K-Fold:</strong> Same as K-Fold but each fold preserves the class distribution. <strong>Essential for imbalanced datasets</strong> like your churn project.</p>
+      <p><strong>TimeSeriesSplit:</strong> For time-series data, you can't shuffle. Each split uses past data to train and future data to validate. You used this in your cinema forecasting project.</p>
+      <div class="highlight">TimeSeriesSplit prevents data leakage: you never train on future data to predict the past. This is the biggest mistake beginners make with time-series.</div>
+      <p><strong>Leave-One-Out (LOOCV):</strong> K = N (each sample is its own test fold). Very expensive but useful for tiny datasets.</p>
+    `},
+    {icon:"⚠️", title:"Data Leakage — The Critical Trap", body:`
+      <div class="warn">Data leakage is when information from outside the training set influences the model. It causes artificially high CV scores that don't generalise. One of the most common real-world mistakes.</div>
+      <p><strong>Common leakage examples:</strong></p>
+      <ul>
+        <li>Scaling the entire dataset before splitting (test statistics leak into training)</li>
+        <li>Filling missing values with the overall mean (includes test set mean)</li>
+        <li>Feature derived from the target (e.g., "average churn rate per region" computed on full dataset)</li>
+      </ul>
+      <p><strong>Fix:</strong> Always fit preprocessing (scaler, imputer) on training fold only. Apply (transform) to test fold. Use <code>Pipeline</code> in sklearn to enforce this.</p>
+    `},
+    {icon:"❓", title:"Interview Q&A", body:`
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">Why did you use TimeSeriesSplit in your cinema project? <span class="chevron">▼</span></div><div class="qa-a">TimeSeriesSplit respects temporal ordering. Standard K-Fold shuffles data randomly, which would allow the model to train on future data and predict the past — a form of data leakage. Since cinema demand is time-dependent (with trends, seasonality, lag features), using future information in training gives an unrealistically optimistic score. TimeSeriesSplit ensures each validation fold is always chronologically after the training fold, simulating real deployment conditions.</div></div>
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">Why use Stratified K-Fold for churn prediction? <span class="chevron">▼</span></div><div class="qa-a">In churn datasets, the positive class (churners) is rare — maybe 10-15% of data. Standard K-Fold might put very few or no churners in a fold by chance, making that fold's score unreliable. Stratified K-Fold ensures each fold has the same class ratio as the full dataset, making scores more stable and representative.</div></div>
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">What is the difference between validation set and test set? <span class="chevron">▼</span></div><div class="qa-a">The validation set is used during development to tune hyperparameters and select models. The test set is a completely held-out final evaluation set — touched only once. If you tune on the test set, it effectively becomes a validation set and you'll overestimate performance. In cross-validation, the folds serve as validation. The test set should be separated before any CV.</div></div>
+    `}
+  ]
+},
+// 3 - Evaluation Metrics
+{
+  badge:"Phase 2 · Fundamentals", badgeColor:"purple",
+  title:"Evaluation Metrics",
+  tagline:"Choosing the wrong metric can sink your project",
+  sections:[
+    {icon:"📖", title:"The Confusion Matrix", body:`
+      <div class="def-box">A confusion matrix summarizes classification results across True Positives (TP), True Negatives (TN), False Positives (FP), and False Negatives (FN).</div>
+      <p><strong>TP:</strong> Predicted positive, actually positive (correctly caught churner)<br>
+      <strong>TN:</strong> Predicted negative, actually negative (correctly retained customer)<br>
+      <strong>FP:</strong> Predicted positive, actually negative (false alarm — Type I error)<br>
+      <strong>FN:</strong> Predicted negative, actually positive (missed churner — Type II error)</p>
+    `},
+    {icon:"📐", title:"Classification Metrics", body:`
+      <code class="formula">Accuracy  = (TP + TN) / (TP + TN + FP + FN)</code>
+      <p>Misleading on imbalanced data. If 95% are non-churners, a model that always says "no churn" gets 95% accuracy but is useless.</p>
+      <code class="formula">Precision = TP / (TP + FP)   — "When I say positive, how often am I right?"</code>
+      <code class="formula">Recall    = TP / (TP + FN)   — "Of all actual positives, how many did I catch?"</code>
+      <code class="formula">F1-Score  = 2 × (Precision × Recall) / (Precision + Recall)</code>
+      <div class="highlight">
+        <strong>Precision vs Recall tradeoff:</strong> Lowering the threshold increases Recall (catch more positives) but decreases Precision (more false alarms). You optimize for one based on business context.<br><br>
+        <strong>Churn prediction:</strong> Prefer high Recall — it's worse to miss a churner than to incorrectly flag someone. You used F1 to balance both.
+      </div>
+      <p><strong>AUC-ROC:</strong> Area Under the ROC Curve. ROC plots TPR (Recall) vs FPR at all thresholds. AUC = 1.0 is perfect, 0.5 is random. Threshold-independent — measures model's ability to discriminate, not at a fixed threshold.</p>
+      <p><strong>AUC-PR (Precision-Recall curve):</strong> Better than AUC-ROC for highly imbalanced data. Focuses only on the positive class.</p>
+    `},
+    {icon:"📏", title:"Regression Metrics", body:`
+      <code class="formula">MAE  = mean(|y_pred - y_actual|)         — easy to interpret, robust to outliers</code>
+      <code class="formula">MSE  = mean((y_pred - y_actual)²)        — penalises large errors heavily</code>
+      <code class="formula">RMSE = √MSE                              — same units as target, most common</code>
+      <code class="formula">R²   = 1 - SS_res/SS_tot                 — proportion of variance explained</code>
+      <div class="tip">You achieved 18% RMSE reduction in your cinema project. That means: RMSE_new = 0.82 × RMSE_baseline. This is a strong result — be ready to explain what baseline you compared against.</div>
+    `},
+    {icon:"❓", title:"Interview Q&A", body:`
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">Why did you use F1 for churn prediction instead of accuracy? <span class="chevron">▼</span></div><div class="qa-a">Churn datasets are imbalanced — churners are a small minority. Accuracy would be misleadingly high even if the model ignores churners entirely. F1-score is the harmonic mean of Precision and Recall, giving a balanced view of performance on the minority class. We optimized for F1 because both false alarms (wasting retention budget) and missed churners (losing revenue) have real costs.</div></div>
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">When would you prefer AUC-ROC over F1? <span class="chevron">▼</span></div><div class="qa-a">AUC-ROC is threshold-independent — useful when you don't know the operating threshold yet or when comparing models regardless of cutoff. F1 is threshold-specific (usually 0.5). Use AUC-ROC for model ranking/comparison, F1 when you have a fixed business threshold. For severe imbalance, AUC-PR is more informative than AUC-ROC because ROC can be overly optimistic when TN count is huge.</div></div>
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">What is RMSE and why is it preferred over MAE? <span class="chevron">▼</span></div><div class="qa-a">RMSE (Root Mean Squared Error) penalizes large errors more heavily than MAE because errors are squared before averaging. In cinema forecasting, a 500-seat error on a blockbuster weekend is much worse than 50 small errors — RMSE captures this severity. MAE is more robust to outliers and easier to interpret. The choice depends on whether large errors are disproportionately costly in your domain.</div></div>
+    `}
+  ]
+},
+// 4 - Feature Engineering
+{
+  badge:"Phase 2 · Fundamentals", badgeColor:"purple",
+  title:"Feature Engineering",
+  tagline:"The most impactful skill in applied ML",
+  sections:[
+    {icon:"📖", title:"Technical Definition", body:`
+      <div class="def-box">Feature Engineering is the process of transforming raw data into informative, model-friendly representations. It includes creating new features, encoding categorical variables, handling missing values, and scaling numerical features.</div>
+      <p>No matter how powerful your algorithm, garbage in = garbage out. Feature engineering is often what separates a mediocre model from a great one.</p>
+    `},
+    {icon:"🔢", title:"Encoding Categorical Variables", body:`
+      <p><strong>One-Hot Encoding (OHE):</strong> Creates binary columns for each category. You used this in your churn project. Good for nominal categories with no order (country, product type). Creates many columns for high-cardinality features — use Label or Target Encoding instead.</p>
+      <p><strong>Label Encoding:</strong> Assigns integer to each category (cat→0, dog→1). Use only for ordinal features (low/medium/high) — linear models treat the integers as having order/distance.</p>
+      <p><strong>Target Encoding:</strong> Replace category with mean target value. Powerful but risks leakage — must be done within CV folds.</p>
+      <div class="highlight">High cardinality problem: A "city" column with 1000 unique values → OHE creates 1000 binary columns. Use Target Encoding or embedding instead.</div>
+    `},
+    {icon:"📊", title:"Scaling & Normalization", body:`
+      <p><strong>StandardScaler (Z-score):</strong> <code>(x - mean) / std</code>. Output has mean=0, std=1. Use for algorithms assuming Gaussian distribution (Logistic Regression, SVM, PCA).</p>
+      <p><strong>MinMaxScaler:</strong> <code>(x - min) / (max - min)</code>. Scales to [0,1]. Use for neural networks, KNN.</p>
+      <p><strong>RobustScaler:</strong> Uses median and IQR — robust to outliers.</p>
+      <div class="tip">Tree-based models (XGBoost, LightGBM, Random Forest) are scale-invariant. They split on thresholds, not distances. Scaling doesn't help them — but it won't hurt either.</div>
+    `},
+    {icon:"🔍", title:"Missing Value Imputation", body:`
+      <p><strong>Simple imputation:</strong> Fill with mean (numerical), mode (categorical), or a fixed value. Fast but ignores correlation between features.</p>
+      <p><strong>KNN Imputation:</strong> Fill using K nearest neighbours. More accurate but expensive.</p>
+      <p><strong>Model-based:</strong> Train a model to predict the missing feature from other features.</p>
+      <p><strong>Missingness as a feature:</strong> Create a binary flag "was_value_missing". Sometimes the fact of missingness is itself informative.</p>
+      <div class="warn">Never impute before splitting train/test — the mean from the full dataset leaks test set information into training. Fit imputer on training set only.</div>
+    `},
+    {icon:"❓", title:"Interview Q&A", body:`
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">Why did you use One-Hot Encoding in your churn project? <span class="chevron">▼</span></div><div class="qa-a">The categorical features in the churn dataset (geography, gender) had no inherent order — Label Encoding would imply Germany > France > Spain which is meaningless. OHE creates separate binary features for each category, letting XGBoost independently learn the effect of each. The dataset had low-cardinality categoricals, so OHE was appropriate without dimensionality concerns.</div></div>
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">Should you scale features before using XGBoost? <span class="chevron">▼</span></div><div class="qa-a">No — tree-based models like XGBoost are invariant to monotonic feature transformations, including scaling. They make binary splits based on thresholds, so the absolute scale doesn't matter. Scaling is essential for gradient descent-based models (linear regression, neural nets) and distance-based models (KNN, SVM).</div></div>
+    `}
+  ]
+},
+// 5 - Class Imbalance
+{
+  badge:"Phase 2 · Fundamentals", badgeColor:"purple",
+  title:"Class Imbalance",
+  tagline:"Your churn project directly involved this",
+  sections:[
+    {icon:"📖", title:"Technical Definition", body:`
+      <div class="def-box">Class imbalance occurs when one class in the target variable significantly outnumbers another. E.g., 90% non-churn, 10% churn. Models trained naively will predict the majority class and achieve high accuracy but useless recall.</div>
+      <p>In your churn project, you explicitly "optimized for F1-score to handle class imbalance" — this shows you understood the problem. Let's go deeper.</p>
+    `},
+    {icon:"⚖️", title:"Techniques to Handle Imbalance", body:`
+      <p><strong>1. Algorithm-level (adjust the model):</strong></p>
+      <ul>
+        <li><code>class_weight='balanced'</code> in sklearn — multiplies the loss of minority class samples. Simple and effective.</li>
+        <li><code>scale_pos_weight</code> in XGBoost — set to (negatives / positives). Tells XGBoost to penalize missing positive class errors more.</li>
+      </ul>
+      <p><strong>2. Resampling the data:</strong></p>
+      <ul>
+        <li><strong>Oversampling (SMOTE):</strong> Synthetic Minority Over-sampling Technique. Creates synthetic minority class samples by interpolating between existing minority points. Better than random duplication.</li>
+        <li><strong>Undersampling:</strong> Randomly remove majority class samples. Risk: losing valuable information.</li>
+        <li><strong>Combined (SMOTEENN):</strong> SMOTE + Edited Nearest Neighbours (remove noisy samples).</li>
+      </ul>
+      <p><strong>3. Threshold adjustment:</strong> Instead of 0.5, set a lower threshold to increase recall on minority class. E.g., predict "churn" if probability > 0.3.</p>
+      <div class="highlight">SMOTE must be applied only on the training set, never on the full dataset. Leaking synthetic minority samples into the test set inflates metrics.</div>
+    `},
+    {icon:"❓", title:"Interview Q&A", body:`
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">What is SMOTE and how does it work? <span class="chevron">▼</span></div><div class="qa-a">SMOTE (Synthetic Minority Over-sampling Technique) generates new minority class samples by interpolation. For each minority sample, it finds its K nearest minority neighbours, then creates new synthetic samples along the line segments connecting them. This avoids simple duplication and creates more diverse minority examples, reducing overfitting to the few existing minority samples.</div></div>
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">What is scale_pos_weight in XGBoost? <span class="chevron">▼</span></div><div class="qa-a">scale_pos_weight controls the weight given to positive class samples. Setting it to (count_negative / count_positive) makes XGBoost treat each positive sample as if it appears more frequently, balancing the gradient updates. For 90/10 imbalance, scale_pos_weight=9 makes the minority class nine times more impactful in the loss function.</div></div>
+    `}
+  ]
+},
+// 6 - Regularization
+{
+  badge:"Phase 2 · Fundamentals", badgeColor:"purple",
+  title:"Regularization",
+  tagline:"How we prevent a model from memorising noise",
+  sections:[
+    {icon:"📖", title:"Technical Definition", body:`
+      <div class="def-box">Regularization adds a penalty term to the loss function that discourages the model from learning overly complex patterns (large coefficients). It reduces variance at the cost of slight increase in bias.</div>
+      <code class="formula">Regularized Loss = Loss(y, ŷ) + λ × Penalty(weights)</code>
+    `},
+    {icon:"🔧", title:"L1 vs L2 vs ElasticNet", body:`
+      <p><strong>L1 Regularization (Lasso):</strong> Penalty = sum of absolute values of weights.</p>
+      <code class="formula">Loss + λ × Σ|wᵢ|</code>
+      <p>Drives some weights exactly to zero → automatic feature selection. Produces sparse models. Good when you have many irrelevant features.</p>
+      <p><strong>L2 Regularization (Ridge):</strong> Penalty = sum of squared weights.</p>
+      <code class="formula">Loss + λ × Σwᵢ²</code>
+      <p>Shrinks all weights toward zero but rarely exactly zero. Works well when many features contribute slightly. Handles multicollinearity better than L1.</p>
+      <p><strong>ElasticNet:</strong> Combination of L1 + L2. Two hyperparameters: overall strength (λ) and L1/L2 ratio (α). Best of both worlds.</p>
+      <div class="highlight">In XGBoost: <code>alpha</code> = L1 regularization on leaf weights. <code>lambda</code> = L2 regularization on leaf weights. Both reduce tree complexity and prevent overfitting.</div>
+    `},
+    {icon:"❓", title:"Interview Q&A", body:`
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">When would you use L1 over L2 regularization? <span class="chevron">▼</span></div><div class="qa-a">Use L1 (Lasso) when you have many features and suspect only a few are truly relevant — it drives irrelevant feature weights to zero, performing implicit feature selection. Use L2 (Ridge) when most features contribute and you want to shrink weights smoothly without eliminating any. Use ElasticNet when you want feature selection but also stability in the presence of correlated features.</div></div>
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">What happens when λ (regularization strength) is too high? <span class="chevron">▼</span></div><div class="qa-a">Too high λ over-penalizes the model, driving all weights toward zero. The model becomes too simple and underfits the data (high bias). The optimal λ lies between too small (overfitting) and too large (underfitting), and is found by cross-validation or hyperparameter search.</div></div>
+    `}
+  ]
+},
+// 7 - Decision Trees
+{
+  badge:"Phase 3 · Algorithms", badgeColor:"amber",
+  title:"Decision Trees",
+  tagline:"The building block of the most powerful algorithms",
+  sections:[
+    {icon:"📖", title:"Technical Definition", body:`
+      <div class="def-box">A Decision Tree recursively partitions the feature space by choosing the best split at each node, creating a tree structure where leaves represent predictions. It is a non-parametric, interpretable model that makes no assumptions about data distribution.</div>
+    `},
+    {icon:"⚙️", title:"How It Works", body:`
+      <p>At each node, the algorithm searches all features and all possible split points to find the one that <strong>maximises information gain</strong> (classification) or <strong>minimises MSE</strong> (regression).</p>
+      <p><strong>Gini Impurity:</strong> Measures how often a randomly chosen element would be incorrectly labeled. Lower = purer.</p>
+      <code class="formula">Gini = 1 - Σ(pᵢ)²</code>
+      <p><strong>Entropy (Information Gain):</strong> Measures disorder in a node.</p>
+      <code class="formula">Entropy = -Σ pᵢ log₂(pᵢ)</code>
+      <div class="tip">Gini is faster to compute (no log). Entropy is slightly more sensitive to class distribution. In practice, results are nearly identical. sklearn uses Gini by default.</div>
+    `},
+    {icon:"🎛️", title:"Hyperparameters", body:`
+      <table class="param-table">
+        <tr><th>Parameter</th><th>Default</th><th>Effect</th></tr>
+        <tr><td>max_depth</td><td>None</td><td>Limits tree depth. Low depth → underfitting. High depth → overfitting. Most important for controlling complexity.</td></tr>
+        <tr><td>min_samples_split</td><td>2</td><td>Minimum samples needed to split a node. Higher = simpler tree, less overfitting.</td></tr>
+        <tr><td>min_samples_leaf</td><td>1</td><td>Minimum samples required at a leaf. Higher = smoother predictions, less variance.</td></tr>
+        <tr><td>max_features</td><td>None</td><td>Number of features to consider at each split. Adds randomness. Key in Random Forest.</td></tr>
+        <tr><td>criterion</td><td>gini</td><td>Split quality measure: 'gini' or 'entropy'. Minimal practical difference.</td></tr>
+      </table>
+    `},
+    {icon:"❓", title:"Interview Q&A", body:`
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">What are the main disadvantages of Decision Trees? <span class="chevron">▼</span></div><div class="qa-a">1. High variance — small changes in data can produce completely different trees. 2. Prone to overfitting without pruning. 3. Axis-aligned splits — can't model diagonal decision boundaries efficiently. 4. Not good for extrapolation — tree predictions are bounded by training data range. These weaknesses motivated ensemble methods like Random Forest and boosting.</div></div>
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">Gini vs Entropy — which is better? <span class="chevron">▼</span></div><div class="qa-a">In practice, the choice rarely matters — both produce very similar trees. Gini is computationally cheaper (no logarithm). Entropy is slightly more sensitive to class probability changes and may produce slightly more balanced splits. For most datasets, either will give nearly identical results. sklearn defaults to Gini.</div></div>
+    `}
+  ]
+},
+// 8 - Random Forest
+{
+  badge:"Phase 3 · Algorithms", badgeColor:"amber",
+  title:"Random Forest",
+  tagline:"Bagging + feature randomness = powerful ensemble",
+  sections:[
+    {icon:"📖", title:"Technical Definition", body:`
+      <div class="def-box">Random Forest is a bagging ensemble of Decision Trees where each tree is trained on a bootstrap sample of the data, and each split considers only a random subset of features. Predictions are made by majority vote (classification) or mean (regression).</div>
+      <p>Two sources of randomness: (1) bootstrap sampling of rows, (2) random feature subset at each split. This decorrelates the trees, making the ensemble much better than any individual tree.</p>
+    `},
+    {icon:"⚙️", title:"Why It Works — Bagging", body:`
+      <p><strong>Bootstrap Aggregation (Bagging):</strong> Each tree trains on a random sample (with replacement) of the training data. About 63% of original rows appear in each bootstrap sample. The 37% not sampled are the "out-of-bag" (OOB) samples.</p>
+      <p><strong>OOB Score:</strong> Each sample is out-of-bag for roughly 37% of trees. You can evaluate the model on OOB samples without a separate validation set — a free cross-validation.</p>
+      <div class="highlight">Bagging reduces variance without significantly increasing bias. Individual trees overfit (high variance), but averaging many uncorrelated trees cancels out the variance. This is why Random Forest outperforms a single deep tree.</div>
+    `},
+    {icon:"🎛️", title:"Key Hyperparameters", body:`
+      <table class="param-table">
+        <tr><th>Parameter</th><th>Default</th><th>Effect</th></tr>
+        <tr><td>n_estimators</td><td>100</td><td>Number of trees. More = better performance, but diminishing returns. More trees = longer training, less variance.</td></tr>
+        <tr><td>max_depth</td><td>None</td><td>Depth of each tree. Deeper trees = lower bias, higher variance per tree. RF corrects variance via averaging.</td></tr>
+        <tr><td>max_features</td><td>'sqrt'</td><td>Features considered at each split. sqrt(n_features) for classification. Lower = more randomness = less correlation between trees.</td></tr>
+        <tr><td>min_samples_leaf</td><td>1</td><td>Minimum leaf size. Increase to smooth predictions and reduce overfitting.</td></tr>
+        <tr><td>bootstrap</td><td>True</td><td>Whether to use bootstrap samples. False = all rows for each tree (just feature randomness).</td></tr>
+        <tr><td>oob_score</td><td>False</td><td>Set True to compute out-of-bag score — a free validation metric.</td></tr>
+      </table>
+    `},
+    {icon:"❓", title:"Interview Q&A", body:`
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">How does Random Forest reduce overfitting compared to a single Decision Tree? <span class="chevron">▼</span></div><div class="qa-a">A single deep tree has high variance — it memorizes the training data. Random Forest trains many such trees but decorrelates them via (1) bootstrap sampling of rows and (2) random feature subsets at each split. When you average the predictions of many uncorrelated high-variance models, the variance cancels out while the bias remains approximately the same. This is the core idea of bagging.</div></div>
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">When would you prefer XGBoost over Random Forest? <span class="chevron">▼</span></div><div class="qa-a">XGBoost (boosting) is generally stronger when: (1) you have structured tabular data and want maximum performance, (2) the dataset has patterns that require sequential error correction, (3) you have enough data to tune hyperparameters. Random Forest is preferred when: (1) you need fast training with minimal tuning, (2) the dataset is noisy (boosting overfits noise more easily), (3) interpretability via feature importance is needed quickly.</div></div>
+    `}
+  ]
+},
+// 9 - Ensemble Methods
+{
+  badge:"Phase 3 · Algorithms", badgeColor:"amber",
+  title:"Ensemble Methods",
+  tagline:"Combining weak learners to create a strong one",
+  sections:[
+    {icon:"📖", title:"Technical Definition", body:`
+      <div class="def-box">Ensemble methods combine multiple base models to produce a prediction that is more accurate and robust than any individual model. The key insight: diverse models that make different errors can be combined to cancel those errors.</div>
+    `},
+    {icon:"🏗️", title:"Bagging vs Boosting vs Stacking", body:`
+      <p><strong>Bagging (Bootstrap Aggregating):</strong> Train models independently on random subsets. Combine by averaging/voting. Reduces variance. Random Forest is bagging of trees.</p>
+      <p><strong>Boosting:</strong> Train models sequentially. Each new model focuses on the samples the previous model got wrong. Reduces bias. XGBoost, LightGBM, AdaBoost are boosting methods.</p>
+      <p><strong>Stacking:</strong> Train diverse base models (Level 0). Use their predictions as features to train a meta-model (Level 1). Most powerful but complex to implement and prone to leakage.</p>
+      <div class="highlight">
+        <strong>Bagging</strong> → reduces variance (fixes overfitting)<br>
+        <strong>Boosting</strong> → reduces bias (fixes underfitting)<br>
+        <strong>Stacking</strong> → reduces both, but complex
+      </div>
+    `},
+    {icon:"⚖️", title:"Weighted Ensemble (Your Cinema Project)", body:`
+      <p>In your cinema project you used a Weighted Ensemble of XGBoost and LightGBM. This is a simple but effective approach:</p>
+      <code class="formula">Final prediction = w₁ × XGB_pred + w₂ × LGB_pred</code>
+      <p>Weights can be set manually or optimized on validation set. The idea: if XGBoost and LightGBM make different errors, their weighted average reduces those errors.</p>
+      <div class="tip">Interview tip: Be ready to explain why XGBoost and LightGBM together work better than either alone. The answer is diversity — they use different algorithms internally (level-wise vs leaf-wise growth), so they make uncorrelated errors.</div>
+    `},
+    {icon:"❓", title:"Interview Q&A", body:`
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">Why does boosting reduce bias while bagging reduces variance? <span class="chevron">▼</span></div><div class="qa-a">Bagging builds many independent high-variance models and averages them — averaging uncorrelated models reduces variance without changing bias significantly. Boosting builds models sequentially, each one correcting the residual errors of the previous — this iterative error correction process reduces the systematic bias of the ensemble. The base learners in boosting are usually shallow trees (stumps), which have high bias but low variance on their own.</div></div>
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">How did you determine the weights in your weighted ensemble? <span class="chevron">▼</span></div><div class="qa-a">A good answer: I evaluated both models independently on the validation set. The model with lower RMSE received a higher weight. Weights can also be optimized using a simple linear regression on the validation predictions (Stacking without a complex meta-learner). Another approach: grid search over weight combinations on the validation set to minimize RMSE.</div></div>
+    `}
+  ]
+},
+// 10 - Linear Regression
+{
+  badge:"Phase 3 · Algorithms", badgeColor:"amber",
+  title:"Linear Regression",
+  tagline:"Simple, interpretable, and still extremely useful",
+  sections:[
+    {icon:"📖", title:"Technical Definition", body:`
+      <div class="def-box">Linear Regression models the relationship between a continuous target variable and one or more features by fitting a linear equation to the data. It minimizes the sum of squared residuals (OLS).</div>
+      <code class="formula">ŷ = β₀ + β₁x₁ + β₂x₂ + ... + βₙxₙ</code>
+    `},
+    {icon:"📋", title:"Key Assumptions (OLS)", body:`
+      <p>Linear regression is only valid if these assumptions hold:</p>
+      <ol>
+        <li><strong>Linearity:</strong> Relationship between features and target is linear.</li>
+        <li><strong>Independence:</strong> Observations are independent (no autocorrelation).</li>
+        <li><strong>Homoscedasticity:</strong> Constant variance of residuals across all predicted values.</li>
+        <li><strong>Normality of residuals:</strong> Residuals are approximately normally distributed.</li>
+        <li><strong>No multicollinearity:</strong> Features are not highly correlated with each other.</li>
+      </ol>
+      <div class="warn">Real-world data rarely satisfies all assumptions perfectly. Tree-based models (XGBoost) make no such assumptions — this is why they often outperform linear models on tabular data.</div>
+    `},
+    {icon:"❓", title:"Interview Q&A", body:`
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">What is multicollinearity and why is it a problem? <span class="chevron">▼</span></div><div class="qa-a">Multicollinearity occurs when two or more features are highly correlated. This makes coefficient estimates unstable — a small change in data can flip the sign or magnitude of a coefficient. The model can't reliably determine the individual effect of each correlated feature. Detection: Variance Inflation Factor (VIF). Fix: Remove one of the correlated features, use PCA, or use Ridge regression (L2 handles multicollinearity well).</div></div>
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">How is R² interpreted and what are its limitations? <span class="chevron">▼</span></div><div class="qa-a">R² measures the proportion of variance in the target explained by the model. R²=0.80 means the model explains 80% of variability. Limitation: R² always increases (or stays the same) as you add more features, even irrelevant ones. Adjusted R² penalizes for extra features. Also, a high R² doesn't mean good predictions — it's scale-free and doesn't capture absolute error magnitude.</div></div>
+    `}
+  ]
+},
+// 11 - Logistic Regression
+{
+  badge:"Phase 3 · Algorithms", badgeColor:"amber",
+  title:"Logistic Regression",
+  tagline:"A classification algorithm, despite the name",
+  sections:[
+    {icon:"📖", title:"Technical Definition", body:`
+      <div class="def-box">Logistic Regression models the probability of a binary outcome using the logistic (sigmoid) function to squash a linear combination of features into a [0,1] range.</div>
+      <code class="formula">P(y=1|X) = σ(β₀ + β₁x₁ + ... + βₙxₙ)</code>
+      <code class="formula">σ(z) = 1 / (1 + e⁻ᶻ)    (sigmoid function)</code>
+      <p>It is a linear classifier — the decision boundary is a hyperplane. It's the fundamental algorithm underlying neural network output layers for classification.</p>
+    `},
+    {icon:"🔢", title:"Log-Odds & Coefficients", body:`
+      <p>Logistic regression models the <strong>log-odds</strong> (logit) of the outcome:</p>
+      <code class="formula">log(P/(1-P)) = β₀ + β₁x₁ + ... + βₙxₙ</code>
+      <p>Each coefficient βᵢ represents the change in log-odds per unit increase in xᵢ. <strong>exp(βᵢ)</strong> is the odds ratio — how much the odds multiply per unit increase.</p>
+      <div class="tip">Logistic regression is trained by maximizing Log-Likelihood (equivalent to minimizing Binary Cross-Entropy Loss), not by minimizing squared errors like linear regression.</div>
+    `},
+    {icon:"🎛️", title:"Key Hyperparameters", body:`
+      <table class="param-table">
+        <tr><th>Parameter</th><th>Default</th><th>Effect</th></tr>
+        <tr><td>C</td><td>1.0</td><td>Inverse of regularization strength. Small C = strong regularization (underfitting risk). Large C = weak regularization (overfitting risk).</td></tr>
+        <tr><td>penalty</td><td>'l2'</td><td>'l1' for feature selection, 'l2' for general use, 'elasticnet' for both.</td></tr>
+        <tr><td>solver</td><td>'lbfgs'</td><td>Optimization algorithm. 'saga' required for l1/elasticnet. 'lbfgs' for l2.</td></tr>
+        <tr><td>max_iter</td><td>100</td><td>Max iterations for solver convergence. Increase if you see ConvergenceWarning.</td></tr>
+        <tr><td>class_weight</td><td>None</td><td>'balanced' adjusts for imbalanced classes.</td></tr>
+      </table>
+    `},
+    {icon:"❓", title:"Interview Q&A", body:`
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">Why is Logistic Regression a classification model and not regression? <span class="chevron">▼</span></div><div class="qa-a">Despite the name, Logistic Regression is a classification model. It uses a logistic (sigmoid) function to output a probability between 0 and 1, then applies a threshold to produce a class label. The "regression" refers to the internal linear model being fitted, not the output type. The predicted output is a class (or class probability), not a continuous value.</div></div>
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">When would you use Logistic Regression over XGBoost? <span class="chevron">▼</span></div><div class="qa-a">Logistic Regression is preferred when: (1) interpretability is critical — coefficients directly show feature impact, (2) dataset is small and simple, (3) features are already linearly separable, (4) inference speed is critical (a single dot product vs a tree traversal), (5) you need calibrated probabilities. XGBoost is preferred for complex non-linear patterns in tabular data with enough data to train well.</div></div>
+    `}
+  ]
+},
+// 12 - XGBoost
+{
+  badge:"Phase 3 · Algorithms ⭐", badgeColor:"coral",
+  title:"XGBoost",
+  tagline:"Used in all 3 of your projects — master this completely",
+  sections:[
+    {icon:"📖", title:"Technical Definition", body:`
+      <div class="def-box">XGBoost (Extreme Gradient Boosting) is a scalable, regularized gradient boosting framework that builds an ensemble of shallow decision trees sequentially, where each new tree fits the residual errors (gradients) of the current ensemble.</div>
+      <p>At its core, XGBoost minimizes a differentiable loss function plus a regularization term, using second-order (Newton) gradient information for faster, more accurate optimization.</p>
+    `},
+    {icon:"⚙️", title:"How It Works — Step by Step", body:`
+      <p><strong>1. Initialize:</strong> Start with a base prediction (mean of target for regression, log-odds for classification).</p>
+      <p><strong>2. Compute residuals:</strong> Calculate the gradient (first derivative) and hessian (second derivative) of the loss with respect to current predictions.</p>
+      <p><strong>3. Fit a tree:</strong> Build a shallow tree that best predicts the gradients. The split score uses both gradient and hessian for optimal gain.</p>
+      <p><strong>4. Update predictions:</strong> Add the tree's output (scaled by learning rate η) to the ensemble.</p>
+      <p><strong>5. Repeat:</strong> Iterate for n_estimators trees or until early stopping.</p>
+      <code class="formula">F_m(x) = F_{m-1}(x) + η × h_m(x)</code>
+      <div class="highlight">Key insight: each tree is fitting the ERRORS of the current model, not the original target. This is gradient descent in function space — each tree is a step toward lower loss.</div>
+    `},
+    {icon:"🎛️", title:"Hyperparameters & Their Effects", body:`
+      <table class="param-table">
+        <tr><th>Parameter</th><th>Default</th><th>Effect & When to Tune</th></tr>
+        <tr><td>n_estimators</td><td>100</td><td>Number of trees. More = better fit, but overfitting risk. Always use early_stopping_rounds instead of guessing.</td></tr>
+        <tr><td>learning_rate (eta)</td><td>0.3</td><td>Shrinks each tree's contribution. Lower η → need more trees, but better generalization. Golden rule: low η (0.01-0.1) + high n_estimators.</td></tr>
+        <tr><td>max_depth</td><td>6</td><td>Maximum tree depth. Controls complexity. 3-8 is typical. Lower = more regularization, underfitting risk. Higher = more complex, overfitting risk.</td></tr>
+        <tr><td>min_child_weight</td><td>1</td><td>Minimum sum of hessians in a leaf. Higher = more conservative, prevents splits on small groups. Reduces overfitting.</td></tr>
+        <tr><td>subsample</td><td>1.0</td><td>Fraction of training rows sampled per tree. 0.5-0.8 adds randomness, reduces variance (like bagging). Helps overfitting.</td></tr>
+        <tr><td>colsample_bytree</td><td>1.0</td><td>Fraction of features sampled per tree. 0.5-0.8 adds diversity, reduces variance. Like Random Forest's max_features.</td></tr>
+        <tr><td>gamma (min_split_loss)</td><td>0</td><td>Minimum loss reduction needed to make a split. Higher = more conservative tree. Prevents splits that barely improve the model.</td></tr>
+        <tr><td>lambda (reg_lambda)</td><td>1</td><td>L2 regularization on leaf weights. Higher = stronger regularization, smaller leaf values, reduces overfitting.</td></tr>
+        <tr><td>alpha (reg_alpha)</td><td>0</td><td>L1 regularization on leaf weights. Produces sparser leaf weights, performs feature selection at the tree level.</td></tr>
+        <tr><td>scale_pos_weight</td><td>1</td><td>Balances positive/negative weights. For imbalanced data, set to (negatives/positives). Critical for your churn project.</td></tr>
+        <tr><td>early_stopping_rounds</td><td>-</td><td>Stop if validation metric doesn't improve for N rounds. Prevents overfitting and saves training time. Always use with eval_set.</td></tr>
+      </table>
+      <div class="tip">Tuning order: (1) max_depth + min_child_weight → (2) subsample + colsample_bytree → (3) gamma → (4) lambda/alpha → (5) learning_rate (lower it at the end)</div>
+    `},
+    {icon:"🆚", title:"XGBoost vs Traditional Gradient Boosting", body:`
+      <ul>
+        <li><strong>Regularization:</strong> XGBoost has built-in L1/L2 regularization. Traditional GB does not.</li>
+        <li><strong>Second-order gradients:</strong> XGBoost uses hessians (second derivative) for more precise splits. Traditional GB uses only first-order gradients.</li>
+        <li><strong>Speed:</strong> XGBoost supports parallel processing on columns during tree construction. Much faster.</li>
+        <li><strong>Missing values:</strong> XGBoost handles missing values internally with a learned default direction. No imputation needed.</li>
+        <li><strong>Pruning:</strong> XGBoost uses "max_depth" pruning (depth-first, then prune). More efficient than traditional post-pruning.</li>
+      </ul>
+    `},
+    {icon:"❓", title:"Interview Q&A", body:`
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">Explain how XGBoost handles missing values. <span class="chevron">▼</span></div><div class="qa-a">XGBoost learns a default direction for missing values during training. For each split, it tries routing all missing value samples to the left and to the right, computing the gain both ways, and assigns the direction that gives a higher gain. This means XGBoost imputes implicitly — missing values go in the direction that best reduces loss. This is why you don't always need to impute before using XGBoost.</div></div>
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">What does learning_rate do and why is lower better? <span class="chevron">▼</span></div><div class="qa-a">Learning rate (eta) scales each tree's contribution to the ensemble. A low learning rate (e.g., 0.01) means each tree makes a tiny correction — the model learns slowly but more carefully. This prevents any single tree from dominating and forces the model to use more trees to fit the data, each adding a small, refined correction. Combined with more trees, it typically achieves better generalization. The tradeoff is longer training time.</div></div>
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">Why did you optimize for F1 in your XGBoost churn model? <span class="chevron">▼</span></div><div class="qa-a">Churn datasets are imbalanced — the majority class is non-churn. Accuracy would be high even if the model ignores churners. F1-score is the harmonic mean of precision and recall, capturing both the false alarm rate and the missed detection rate. By optimizing F1, we ensure the model is useful for both: identifying actual churners (recall) and not wasting retention campaigns on non-churners (precision). We also set scale_pos_weight to handle the imbalance at the algorithm level.</div></div>
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">What is early stopping and why did you use it? <span class="chevron">▼</span></div><div class="qa-a">Early stopping monitors a validation metric during training and stops when it hasn't improved for N consecutive rounds (early_stopping_rounds). This serves two purposes: (1) prevents overfitting by stopping before the model starts memorizing training noise, and (2) saves computation — no need to run all 1000 trees if the model peaked at round 247. You pass an eval_set (validation data) to track the metric. The model keeps the best iteration's weights.</div></div>
+    `}
+  ]
+},
+// 13 - LightGBM
+{
+  badge:"Phase 3 · Algorithms", badgeColor:"amber",
+  title:"LightGBM",
+  tagline:"Faster than XGBoost, often just as accurate",
+  sections:[
+    {icon:"📖", title:"Technical Definition", body:`
+      <div class="def-box">LightGBM (Light Gradient Boosting Machine) is a gradient boosting framework by Microsoft that uses leaf-wise tree growth (instead of level-wise) and two novel techniques — GOSS and EFB — to achieve significantly faster training with lower memory usage.</div>
+    `},
+    {icon:"🔑", title:"Key Innovations vs XGBoost", body:`
+      <p><strong>1. Leaf-wise (Best-first) Tree Growth:</strong><br>
+      XGBoost grows trees level-by-level (breadth-first). LightGBM grows trees leaf-by-leaf, always expanding the leaf with the maximum delta loss. This leads to deeper, more asymmetric trees that achieve lower loss with fewer leaves.</p>
+      <div class="highlight">Leaf-wise can overfit on small datasets. Always set min_data_in_leaf to prevent this.</div>
+      <p><strong>2. GOSS (Gradient-based One-Side Sampling):</strong><br>
+      Instead of using all data for each tree, GOSS keeps samples with large gradients (high error) and randomly samples from small-gradient samples. Large gradient samples are most informative for learning. This reduces training data size without losing much accuracy.</p>
+      <p><strong>3. EFB (Exclusive Feature Bundling):</strong><br>
+      Bundles mutually exclusive features (e.g., one-hot encoded features where only one is non-zero at a time) into a single feature. Reduces number of features significantly, speeding up split finding.</p>
+    `},
+    {icon:"🆚", title:"LightGBM vs XGBoost", body:`
+      <table class="param-table">
+        <tr><th>Property</th><th>XGBoost</th><th>LightGBM</th></tr>
+        <tr><td>Tree growth</td><td>Level-wise</td><td>Leaf-wise</td></tr>
+        <tr><td>Speed</td><td>Fast</td><td>Faster (10-20x on large data)</td></tr>
+        <tr><td>Memory</td><td>Higher</td><td>Lower</td></tr>
+        <tr><td>Small datasets</td><td>Better</td><td>Overfitting risk</td></tr>
+        <tr><td>Large datasets</td><td>Slower</td><td>Dominant choice</td></tr>
+        <tr><td>Categorical support</td><td>Manual encoding</td><td>Native (use_cat=True)</td></tr>
+      </table>
+      <div class="tip">For your cinema forecasting project: large datasets + time-series features → LightGBM's speed advantage is meaningful. Ensemble of both leveraged their diversity.</div>
+    `},
+    {icon:"🎛️", title:"Key Hyperparameters", body:`
+      <table class="param-table">
+        <tr><th>Parameter</th><th>Default</th><th>Effect</th></tr>
+        <tr><td>num_leaves</td><td>31</td><td>Max number of leaves. Main complexity control in LightGBM (replaces max_depth). Lower = simpler. Should be < 2^max_depth.</td></tr>
+        <tr><td>learning_rate</td><td>0.1</td><td>Step size. Lower + more trees = better generalization.</td></tr>
+        <tr><td>n_estimators</td><td>100</td><td>Number of boosting rounds. Use early stopping.</td></tr>
+        <tr><td>min_data_in_leaf</td><td>20</td><td>Critical for leaf-wise growth. Higher = less overfitting. Most important regularization param.</td></tr>
+        <tr><td>feature_fraction</td><td>1.0</td><td>Fraction of features per tree. Like colsample_bytree in XGBoost.</td></tr>
+        <tr><td>bagging_fraction</td><td>1.0</td><td>Fraction of data per tree. Like subsample in XGBoost. Set bagging_freq > 0 to enable.</td></tr>
+        <tr><td>lambda_l1</td><td>0</td><td>L1 regularization on leaf scores.</td></tr>
+        <tr><td>lambda_l2</td><td>0</td><td>L2 regularization on leaf scores.</td></tr>
+        <tr><td>is_unbalance</td><td>False</td><td>Set True for imbalanced classification — automatically adjusts weights.</td></tr>
+      </table>
+    `},
+    {icon:"❓", title:"Interview Q&A", body:`
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">Explain leaf-wise vs level-wise tree growth. <span class="chevron">▼</span></div><div class="qa-a">Level-wise (XGBoost) expands all leaves at the same depth simultaneously, growing the tree breadth-first. Every node at depth d gets split before any node at depth d+1. This creates balanced, symmetric trees. Leaf-wise (LightGBM) always picks the single leaf with the highest gain and splits only that one. This creates deeper, asymmetric trees that reduce loss faster — fewer trees needed to achieve the same accuracy. The downside is higher overfitting risk on small datasets, controlled by min_data_in_leaf.</div></div>
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">Why did combining XGBoost + LightGBM improve your cinema forecast? <span class="chevron">▼</span></div><div class="qa-a">The two models are architecturally different: XGBoost uses level-wise growth with hessian-based splits; LightGBM uses leaf-wise growth with GOSS sampling. This means they tend to make different prediction errors on the same data — their errors are partially uncorrelated. When you take a weighted average of uncorrelated predictions, the errors partially cancel out, reducing the overall RMSE of the ensemble below what either model achieves alone. This is the fundamental principle behind why diverse ensembles outperform individual models.</div></div>
+      <div class="qa-item"><div class="qa-q" onclick="toggleQA(this)">What is num_leaves and why is it more important than max_depth in LightGBM? <span class="chevron">▼</span></div><div class="qa-a">In LightGBM's leaf-wise growth, the tree is defined by the number of leaf nodes, not its depth. A tree with 31 leaves can be very deep asymmetrically. num_leaves is the primary control for model complexity — it directly bounds how many partitions the model can create. max_depth is a secondary constraint. Setting num_leaves too high (e.g., 300 for a small dataset) causes overfitting because the model can create very specific partitions for small groups of samples.</div></div>
+    `}
+  ]
+}
+];
+
+let current = 0;
+const visited = new Set([0]);
+
+function render(idx) {
+  const t = topics[idx];
+  const colors = {purple:'var(--purple)',amber:'var(--amber)',coral:'var(--coral)'};
+  const bgs = {purple:'var(--purple-l)',amber:'var(--amber-l)',coral:'var(--coral-l)'};
+  const txts = {purple:'var(--purple-t)',amber:'var(--amber-t)',coral:'var(--coral-t)'};
+
+  let html = `<div class="topic-header">
+    <div class="topic-badge" style="background:${bgs[t.badgeColor]};color:${txts[t.badgeColor]}">${t.badge}</div>
+    <h1>${t.title}</h1>
+    <div class="topic-tagline">${t.tagline}</div>
+  </div>`;
+
+  t.sections.forEach((s, si) => {
+    html += `<div class="section">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span class="section-icon">${s.icon}</span>
+        <span class="section-title">${s.title}</span>
+        <span style="margin-left:auto;font-size:11px;color:var(--text3)">▼</span>
+      </div>
+      <div class="section-body">${s.body}</div>
+    </div>`;
+  });
+
+  const prev = idx > 0 ? `<button class="btn" onclick="goTo(${idx-1})">← Previous</button>` : '';
+  const next = idx < topics.length-1 ? `<button class="btn btn-primary" onclick="goTo(${idx+1})">Next →</button>` : '<button class="btn btn-primary" style="opacity:.5;cursor:default">All done! 🎉</button>';
+  html += `<div class="nav-btns">${prev}${next}</div>`;
+
+  document.getElementById('main').innerHTML = html;
+  document.getElementById('main').scrollTop = 0;
+}
+
+function goTo(idx) {
+  current = idx;
+  visited.add(idx);
+  document.querySelectorAll('.nav-item').forEach(el => {
+    const id = parseInt(el.dataset.id);
+    el.classList.remove('active','done');
+    if(id === idx) el.classList.add('active');
+    else if(visited.has(id)) el.classList.add('done');
+  });
+  const pct = Math.round((visited.size / topics.length) * 100);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  render(idx);
+}
+
+function toggleSection(header) {
+  const body = header.nextElementSibling;
+  const arrow = header.querySelector('span:last-child');
+  const hidden = body.classList.toggle('hidden');
+  arrow.style.transform = hidden ? 'rotate(-90deg)' : '';
+}
+
+function toggleQA(el) {
+  const a = el.nextElementSibling;
+  const c = el.querySelector('.chevron');
+  a.classList.toggle('open');
+  c.classList.toggle('open');
+}
+
+goTo(0);
+</script>
+</body>
+</html>
